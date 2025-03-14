@@ -9,83 +9,7 @@
 // Functions to construct grammar from .txt file
 
 TokenType string_to_terminal(const char* str) {
-	// Define token mapping structure
-	typedef struct {
-		const char* name;
-		TokenType value;
-	} TokenMap;
-
-	// Create static lookup table
-	static const TokenMap token_map[] = {
-		// Keywords
-		{"TK_WITH", TK_WITH},
-		{"TK_PARAMETERS", TK_PARAMETERS},
-		{"TK_END", TK_END},
-		{"TK_WHILE", TK_WHILE},
-		{"TK_UNION", TK_UNION},
-		{"TK_ENDUNION", TK_ENDUNION},
-		{"TK_DEFINETYPE", TK_DEFINETYPE},
-		{"TK_AS", TK_AS},
-		{"TK_TYPE", TK_TYPE},
-		{"TK_MAIN", TK_MAIN},
-		{"TK_GLOBAL", TK_GLOBAL},
-		{"TK_PARAMETER", TK_PARAMETER},
-		{"TK_LIST", TK_LIST},
-		{"TK_INPUT", TK_INPUT},
-		{"TK_OUTPUT", TK_OUTPUT},
-		{"TK_INT", TK_INT},
-		{"TK_REAL", TK_REAL},
-		{"TK_ENDWHILE", TK_ENDWHILE},
-		{"TK_IF", TK_IF},
-		{"TK_THEN", TK_THEN},
-		{"TK_ENDIF", TK_ENDIF},
-		{"TK_READ", TK_READ},
-		{"TK_WRITE", TK_WRITE},
-		{"TK_RETURN", TK_RETURN},
-		{"TK_CALL", TK_CALL},
-		{"TK_RECORD", TK_RECORD},
-		{"TK_ENDRECORD", TK_ENDRECORD},
-		{"TK_ELSE", TK_ELSE},
-		
-		// Operators
-		{"TK_ASSIGNOP", TK_ASSIGNOP},
-		{"TK_PLUS", TK_PLUS},
-		{"TK_MINUS", TK_MINUS},
-		{"TK_MUL", TK_MUL},
-		{"TK_DIV", TK_DIV},
-		{"TK_AND", TK_AND},
-		{"TK_OR", TK_OR},
-		{"TK_NOT", TK_NOT},
-		{"TK_LT", TK_LT},
-		{"TK_LE", TK_LE},
-		{"TK_EQ", TK_EQ},
-		{"TK_GT", TK_GT},
-		{"TK_GE", TK_GE},
-		{"TK_NE", TK_NE},
-		
-		// Delimiters
-		{"TK_SQL", TK_SQL},
-		{"TK_SQR", TK_SQR},
-		{"TK_COMMA", TK_COMMA},
-		{"TK_SEM", TK_SEM},
-		{"TK_COLON", TK_COLON},
-		{"TK_DOT", TK_DOT},
-		{"TK_OP", TK_OP},
-		{"TK_CL", TK_CL},
-		
-		// Complex tokens
-		{"TK_ID", TK_ID},
-		{"TK_NUM", TK_NUM},
-		{"TK_RNUM", TK_RNUM},
-		{"TK_FUNID", TK_FUNID},
-		{"TK_RUID", TK_RUID},
-		{"TK_FIELDID", TK_FIELDID},
-		{"TK_COMMENT", TK_COMMENT},
-		
-		// Epsilon
-		{"eps", EPSILON_TOKEN}
-	};
-
+	// Map is defined in parserDef.h
 	// Iterate through the map
 	for (size_t i = 0; i < sizeof(token_map)/sizeof(token_map[0]); i++) {
 		if (strcmp(str, token_map[i].name) == 0) {
@@ -627,35 +551,154 @@ ParseTreeNode* createParseTreeNode(Symbol* symbol, ParseTreeNode* parent, Token*
 	return new_node;
 }
 
-
-// TwinBuffer should be a part of the real lexerDef.h
-ParseTreeNode parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** T, SymbolList** parse_table)
+// Terminal to string
+char* terminal_or_token_to_string(TokenType terminal_type)
 {
-	Token* tok = getNextToken(B, testcaseFile); // Get the next token // TODO: add params to this fn. call
-	ParseTreeStack* stack = createStack(10);
-	ParseTreeNode* dollar_node = createParseTreeNode(createTerminalSymbol(DOLLAR_TOKEN),NULL,NULL);
-	push(stack, dollar_node); // Push dollar node to stack
-	ParseTreeNode* root = createParseTreeNode(createVariableSymbol(0),NULL,NULL);
-	ParseTreeNode* top_node = root;
-	push(stack, root);
-	while (top_node != DOLLAR_TOKEN && tok != NULL)
-	{
-		if (isEpsilon(top_node->symbol))
-		{
-			pop(stack);
-		} else if ((top_node->token != NULL) && (top_node->token->type == tok->type))
-		{
-			// Terminal on the stack same as terminal in input
-			pop(stack);
-		}else
-		{
-			SymbolList* prodn_rule = 
+	for (size_t i = 0; i < sizeof(token_map)/sizeof(token_map[0]); i++) {
+		if (terminal_type == token_map[i].value) {
+			return token_map[i].name;
 		}
 	}
-	if (top_node != DOLLAR_TOKEN && tok == NULL)
+}
+// Variable to string
+char* variable_to_string(VariableType variable_type)
+{
+	if (variable_type < 0)
 	{
-		// Invalid token error, do nothing
+		printf("Invalid variable to convert to string");
+		return NULL;
 	}
+	return str_variable_list[variable_type];
+}
+// Checks if token type is present in List of symbols
+bool token_present_in_set(SymbolList* set, TokenType tok_type)
+{
+	Symbol** list = set->symbol_list;
+	for (int i = 0; i < set->length; i+=1)
+	{
+		if (list[i]->data.terminal == tok_type)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+// TwinBuffer should be a part of the real lexerDef.h
+ParseTreeNode* parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** parseTable, /* for our purposes we assume */ FirstAndFollow ff) {
+	// Get the first token.
+	Token* tok = getNextToken(B, testcaseFile);
+	
+	// Create the parse tree stack.
+	ParseTreeStack* stack = createStack(10);
+	
+	// Create and push the dollar (end-of-input) marker.
+	ParseTreeNode* dollar_node = createParseTreeNode(createTerminalSymbol(DOLLAR_TOKEN), NULL, NULL);
+	push(stack, dollar_node);
+	
+	// Create the root node for the start symbol (assumed to be variable 0, e.g. "program").
+	ParseTreeNode* root = createParseTreeNode(createVariableSymbol(0), NULL, NULL);
+	push(stack, root);
+	
+	ParseTreeNode* top_node = top(stack);
+	// Main parsing loop.
+	while (!isStackEmpty(stack) && tok != NULL && top(stack) != dollar_node) {
+		
+		// If the top symbol is epsilon, simply pop it.
+		if (isEpsilon(top_node->symbol)) {
+			pop(stack);
+			continue;
+		}
+		
+		// If the top is a terminal:
+		if (top_node->symbol->type == SYMBOL_TYPE_TERMINAL) {
+			if (top_node->symbol->data.terminal == tok->type) {
+				// Terminal matches the current token.
+				top_node->token = tok;  // Link the token to the parse tree node.
+				pop(stack);
+				tok = getNextToken(B, testcaseFile);
+			} else {
+				// Terminal mismatch: report error and discard token.
+				printf("Error at line %d: Terminal mismatch. Expected %s but found %s. Discarding token.\n",
+					   tok->line_no, terminal_or_token_to_string(top_node->token->type), terminal_or_token_to_string(tok->type));
+				tok = getNextToken(B, testcaseFile);
+			}
+			continue;
+		}
+		
+		// At this point, the top of stack is a non-terminal.
+		int varIndex = top_node->symbol->data.non_terminal;
+		int tokenIndex = tok->type;  // Assumes token types map to indices [0, NUM_TERMINALS)
+		
+		// Look up the production in the parse table.
+		SymbolList* production = parseTable[varIndex][tokenIndex];
+		
+		// Case 1: Synch production. (Production marked with length == -1)
+		if (production != NULL && production->length == -1) {
+			printf("Error at line %d: Encountered synch production for non-terminal '%s' with token %s. Popping '%s'.\n",
+				   tok->line_no, str_variable_list[varIndex], tokenToString(tok), str_variable_list[varIndex]);
+			pop(stack);
+			// After popping, we continue parsing
+			continue;
+		}
+		
+		// Case 2: No production found. Error state
+		if (production == NULL) {
+			// Error recovery: discard tokens until one is found in the union of FIRST and FOLLOW sets.
+			SymbolList* first_set = ff.first_sets[varIndex];
+			SymbolList* follow_set = ff.follow_sets[varIndex];
+			while (tok != NULL && !token_present_in_set(first_set,tok->type) && !token_present_in_set(follow_set, tok->type)) {
+				printf("Error at line %d: Token %s not in FIRST or FOLLOW set of non-terminal '%s'. Discarding token.\n",
+					   tok->line_no, tokenToString(tok), str_variable_list[varIndex]);
+				tok = getNextToken(B, testcaseFile);
+			}
+			if (tok == NULL)
+				break;  // End of input.
+			
+			// Now tok is in the union of FIRST and FOLLOW.
+			if (token_present_in_set(follow_set, tok->type)) {
+				// Token belongs to FOLLOW: recover by popping the non-terminal.
+				printf("Error at line %d: Token %s found in FOLLOW set of '%s'. Popping non-terminal.\n",
+					   tok->line_no, tokenToString(tok), str_variable_list[varIndex]);
+				pop(stack);
+			} else {
+				// Token is in FIRST: do not pop non-terminal, resume parsing.
+				printf("Error at line %d: Token %s found in FIRST set of '%s'. Resuming parsing without popping non-terminal.\n",
+					   tok->line_no, tokenToString(tok), str_variable_list[varIndex]);
+			}
+			continue; // Retry with the same top-of-stack (or new top if popped) and current token.
+		}
+		
+		// Case 3: Valid production found.
+		// Report production application (you may wish to print the right-hand side symbols).
+		printf("Applying production for non-terminal '%s' with token %s.\n",
+			   str_variable_list[varIndex], terminal_or_token_to_string(tok));
+		
+		// Pop the non-terminal.
+		pop(stack);
+		
+		// Create parse tree children for the production.
+		top_node->numChildren = production->length;
+		top_node->children = malloc(production->length * sizeof(ParseTreeNode*));
+		// Push production symbols in reverse order (skipping epsilon symbols).
+		for (int i = production->length - 1; i >= 0; i--) {
+			Symbol* sym = production->symbol_list[i];
+			ParseTreeNode* child = createParseTreeNode(sym, top_node, NULL);
+			top_node->children[i] = child;
+			if (!isEpsilon(sym))
+				push(stack, child);
+		}
+		top_node = top(stack); 
+	}
+	
+	if (tok == NULL ) {
+		if ((top_node->symbol->type==SYMBOL_TYPE_VARIABLE) || (top_node->symbol->type == SYMBOL_TYPE_TERMINAL && top_node->symbol->data.terminal != DOLLAR_TOKEN))
+		{
+			printf("Error: Unexpected end of input.\n");
+		}
+	}
+	
+	return root;
 }
 
 void PrintParseTree(ParseTreeNode T, char* outfile)
