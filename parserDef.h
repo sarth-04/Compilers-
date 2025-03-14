@@ -1,10 +1,15 @@
 #include "lexerDef.h" // TODO: reconcile differences with actual lexerDef.h
 #define NUM_VARIABLES 53
+// #define NUM_RULES 54 
+#define NUM_TERMINALS 57
+// Special tokens for end of input and epsilon
+#define EPSILON_TOKEN -1    
+#define DOLLAR_TOKEN  -2   
 
 // Fill in all the non terminals
 typedef enum 
 {
-program,
+program, 
 mainFunction,
 otherFunctions,
 function,
@@ -231,12 +236,15 @@ typedef struct FirstAndFollow
 	SymbolList** follow_sets; // Array of pointers to SymbolLists
 } FirstAndFollow;
 
-typedef struct ParseTable
-{
+// typedef struct ParseTable
+// {
 	
-} ParseTable;
+// } ParseTable;
 
-typedef struct ParseTree
-{
-	
-} ParseTree;
+// A node in the parse tree.
+typedef struct ParseTreeNode {
+	Symbol* symbol;                // The grammar symbol (non-terminal or terminal) at this node.
+	Token* token;                  // The token from the lexer (only applicable for terminal nodes).
+	int numChildren;               // Number of children nodes.
+	ParseTreeNode** children;  // Array of pointers to child nodes.
+} ParseTreeNode;

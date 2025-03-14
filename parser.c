@@ -4,10 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define NUM_RULES 54 
-// Special tokens for end of input and epsilon
-#define EPSILON_TOKEN -1    
-#define DOLLAR_TOKEN  -2    
+#include <stack.h>
 
 // Functions to construct grammar from .txt file
 
@@ -166,7 +163,7 @@ Grammar* getGrammarFromFile(char** file_name)
 {
 	Grammar* grammar;
 	int num_rules = 0;
-	grammar->vars_and_rules = malloc(sizeof(VariableRule) * NUM_RULES);
+	grammar->vars_and_rules = malloc(sizeof(VariableRule*) * NUM_VARIABLES);
 	FILE *fp;
 	char * line = NULL;
 	size_t len = 0;
@@ -178,7 +175,7 @@ Grammar* getGrammarFromFile(char** file_name)
 	if (fp == NULL)
 		printf("Couldn't open grammar file\n");exit(1); 
 
-	SymbolList** temp_rules_list = malloc(sizeof(SymbolList) * 5); // Temporarily store all prodn. rules for a variable
+	SymbolList** temp_rules_list = malloc(sizeof(SymbolList*) * 5); // Temporarily store all prodn. rules for a variable
 	int num_var_rules = 0; // NUmber of productions for one variable
 	while ((read = getline(&line, &len, fp)) != -1) {
 		// 1. Split at "===>" and get LHS symbol
@@ -363,71 +360,71 @@ SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
 	return first_set;
 }
 
-// SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
-// {
-// 	SymbolList* follow = createEmptySymbolList();
+SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
+{
+	SymbolList* follow = createEmptySymbolList();
 
-// 	// FOLLOW sets are only defined for non-terminals.
-// 	if (variable->type == SYMBOL_TYPE_TERMINAL)
-// 		return follow;
+	// FOLLOW sets are only defined for non-terminals.
+	if (variable->type == SYMBOL_TYPE_TERMINAL)
+		return follow;
 
-// 	VariableType target = variable->data.non_terminal;
+	VariableType target = variable->data.non_terminal;
 
-// 	// Look through every production in the grammar.
-// 	for (int i = 0; i < NUM_RULES; i++)
-// 	{
-// 		VariableRule* vr = grammar->vars_and_rules[i];
-// 		// LHS of the production.
-// 		Symbol lhs;
-// 		lhs.type = SYMBOL_TYPE_VARIABLE;
-// 		lhs.data.non_terminal = vr->variable;
+	// Look through every production in the grammar.
+	for (int i = 0; i < NUM_VARIABLES; i++)
+	{
+		VariableRule* vr = grammar->vars_and_rules[i];
+		// LHS of the production.
+		Symbol lhs;
+		lhs.type = SYMBOL_TYPE_VARIABLE;
+		lhs.data.non_terminal = vr->variable;
 
-// 		for (int r = 0; r < vr->num_rules; r++)
-// 		{
-// 			SymbolList* production = vr->variable_rules[r];
+		for (int r = 0; r < vr->num_rules; r++)
+		{
+			SymbolList* production = vr->variable_rules[r];
 
-// 			// Look for an occurrence of the target non-terminal in the production.
-// 			for (int j = 0; j < production->length; j++)
-// 			{
-// 				Symbol* s = production->symbol_list[j];
-// 				if (s->type == SYMBOL_TYPE_VARIABLE &&
-// 					s->data.non_terminal == target)
-// 				{
-// 					bool betaNullable = true;
-// 					// Process symbols following s (i.e. beta).
-// 					for (int k = j + 1; k < production->length; k++)
-// 					{
-// 						Symbol* betaSym = production->symbol_list[k];
-// 						SymbolList* firstBeta = ComputeFirstSet(grammar, betaSym);
+			// Look for an occurrence of the target non-terminal in the production.
+			for (int j = 0; j < production->length; j++)
+			{
+				Symbol* s = production->symbol_list[j];
+				if (s->type == SYMBOL_TYPE_VARIABLE &&
+					s->data.non_terminal == target)
+				{
+					bool betaNullable = true;
+					// Process symbols following s (i.e. beta).
+					for (int k = j + 1; k < production->length; k++)
+					{
+						Symbol* betaSym = production->symbol_list[k];
+						SymbolList* firstBeta = ComputeFirstSet(grammar, betaSym);
 
-// 						// Add FIRST(betaSym) minus ε to FOLLOW(target).
-// 						for (int m = 0; m < firstBeta->length; m++)
-// 						{
-// 							if (!isEpsilon(firstBeta->symbol_list[m]))
-// 								addSymbol(follow, firstBeta->symbol_list[m]);
-// 						}
-// 						if (!containsEpsilon(firstBeta))
-// 						{
-// 							betaNullable = false;
-// 							break;
-// 						}
-// 					}
-// 					// If there is no beta or beta can derive ε,
-// 					// add FOLLOW(lhs) to FOLLOW(target).
-// 					if (betaNullable)
-// 					{
-// 						SymbolList* followLHS = ComputeFollowSet(grammar, &lhs);
-// 						for (int m = 0; m < followLHS->length; m++)
-// 						{
-// 							addSymbol(follow, followLHS->symbol_list[m]);
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return follow;
-// }
+						// Add FIRST(betaSym) minus ε to FOLLOW(target).
+						for (int m = 0; m < firstBeta->length; m++)
+						{
+							if (!isEpsilon(firstBeta->symbol_list[m]))
+								addSymbol(follow, firstBeta->symbol_list[m]);
+						}
+						if (!containsEpsilon(firstBeta))
+						{
+							betaNullable = false;
+							break;
+						}
+					}
+					// If there is no beta or beta can derive ε,
+					// add FOLLOW(lhs) to FOLLOW(target).
+					if (betaNullable)
+					{
+						SymbolList* followLHS = ComputeFollowSet(grammar, &lhs);
+						for (int m = 0; m < followLHS->length; m++)
+						{
+							addSymbol(follow, followLHS->symbol_list[m]);
+						}
+					}
+				}
+			}
+		}
+	}
+	return follow;
+}
 
 
 FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
@@ -521,18 +518,81 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 	}
 	return ff;
 }
-
-void createParseTable(FirstAndFollow f_set, ParseTable T)
+/*
+ * For each production A -> α in the grammar (using the global grammar pointer), the
+ * following is done:
+ *   1. Compute FIRST(α).
+ *   2. For every terminal a in FIRST(α) (except for ε), store the production in
+ *      table[A][a].
+ *   3. If ε is in FIRST(α), then for every terminal b in FOLLOW(A), store the production
+ *      in table[A][b].
+*/
+// 2d array, with each element being a list of Symbols
+// [Variable][Terminal]
+SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 {
-	
+	// Allocate a 2D array: rows for non-terminals, columns for terminals.
+	SymbolList*** table = malloc(NUM_VARIABLES * sizeof(SymbolList**));
+	for (int i = 0; i < NUM_VARIABLES; i++) {
+		table[i] = malloc(NUM_TERMINALS * sizeof(SymbolList*));
+		for (int j = 0; j < NUM_TERMINALS; j++) {
+			table[i][j] = NULL; // Initialize table entries to NULL.
+		}
+	}
+	// For each non-terminal A, get its production rules from the global grammar.
+	for (int i = 0; i < NUM_VARIABLES; i++) {
+		VariableType A = variable_list[i];
+		VariableRule* vr = NULL;
+		// Look up the production rules for non-terminal A.
+		for (int r = 0; r < NUM_VARIABLES; r++) {
+			if (grammar->vars_and_rules[r]->variable == A) {
+				vr = grammar->vars_and_rules[r];
+				break;
+			}
+		}
+		if (vr == NULL)
+			continue;  // No productions found for this non-terminal.
+
+		// For each production A -> α.
+		for (int r = 0; r < vr->num_rules; r++) {
+			SymbolList* production = vr->variable_rules[r];
+			SymbolList* firstProd = computeFirstOfProduction(production);
+
+			// For every terminal in FIRST(α) (except epsilon), set table[A][terminal] = production.
+			for (int k = 0; k < firstProd->length; k++) {
+				Symbol* term = firstProd->symbol_list[k];
+				if (!isEpsilon(term)) {
+					int termIndex = term->data.terminal; // Assumes terminals map into [0, NUM_TERMINALS)
+					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
+						table[i][termIndex] = production;
+					}
+				}
+			}
+			// If FIRST(α) contains epsilon, for each terminal in FOLLOW(A) add production.
+			if (containsEpsilon(firstProd)) {
+				SymbolList* followA = ff.follow_sets[A];
+				for (int k = 0; k < followA->length; k++) {
+					Symbol* term = followA->symbol_list[k];
+					int termIndex = term->data.terminal;
+					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
+						table[i][termIndex] = production;
+					}
+				}
+			}
+			free(firstProd);
+			
+		}
+	}
+	return table;
 }
 
-ParseTree parseInputSourceCode(char *testcaseFile, ParseTable T)
+// TK_id, TK_whatever....
+ParseTreeNode parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** T)
 {
-	
+	Token* tok = getNextToken(B, testcaseFile); // TODO: add params to this fn. call
 }
 
-void PrintParseTree(ParseTree T, char* outfile)
+void PrintParseTree(ParseTreeNode T, char* outfile)
 {
 	// lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
 	
