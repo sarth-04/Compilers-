@@ -7,6 +7,84 @@
 #define DOLLAR_TOKEN  -2 
 #define SYN_SET -3  
 
+// Define token mapping structure
+typedef struct {
+	const char* name;
+	TokenType value;
+} TokenMap;
+
+// Create static lookup table
+const TokenMap token_map[] = {
+	// Keywords
+	{"TK_WITH", TK_WITH},
+	{"TK_PARAMETERS", TK_PARAMETERS},
+	{"TK_END", TK_END},
+	{"TK_WHILE", TK_WHILE},
+	{"TK_UNION", TK_UNION},
+	{"TK_ENDUNION", TK_ENDUNION},
+	{"TK_DEFINETYPE", TK_DEFINETYPE},
+	{"TK_AS", TK_AS},
+	{"TK_TYPE", TK_TYPE},
+	{"TK_MAIN", TK_MAIN},
+	{"TK_GLOBAL", TK_GLOBAL},
+	{"TK_PARAMETER", TK_PARAMETER},
+	{"TK_LIST", TK_LIST},
+	{"TK_INPUT", TK_INPUT},
+	{"TK_OUTPUT", TK_OUTPUT},
+	{"TK_INT", TK_INT},
+	{"TK_REAL", TK_REAL},
+	{"TK_ENDWHILE", TK_ENDWHILE},
+	{"TK_IF", TK_IF},
+	{"TK_THEN", TK_THEN},
+	{"TK_ENDIF", TK_ENDIF},
+	{"TK_READ", TK_READ},
+	{"TK_WRITE", TK_WRITE},
+	{"TK_RETURN", TK_RETURN},
+	{"TK_CALL", TK_CALL},
+	{"TK_RECORD", TK_RECORD},
+	{"TK_ENDRECORD", TK_ENDRECORD},
+	{"TK_ELSE", TK_ELSE},
+	
+	// Operators
+	{"TK_ASSIGNOP", TK_ASSIGNOP},
+	{"TK_PLUS", TK_PLUS},
+	{"TK_MINUS", TK_MINUS},
+	{"TK_MUL", TK_MUL},
+	{"TK_DIV", TK_DIV},
+	{"TK_AND", TK_AND},
+	{"TK_OR", TK_OR},
+	{"TK_NOT", TK_NOT},
+	{"TK_LT", TK_LT},
+	{"TK_LE", TK_LE},
+	{"TK_EQ", TK_EQ},
+	{"TK_GT", TK_GT},
+	{"TK_GE", TK_GE},
+	{"TK_NE", TK_NE},
+	
+	// Delimiters
+	{"TK_SQL", TK_SQL},
+	{"TK_SQR", TK_SQR},
+	{"TK_COMMA", TK_COMMA},
+	{"TK_SEM", TK_SEM},
+	{"TK_COLON", TK_COLON},
+	{"TK_DOT", TK_DOT},
+	{"TK_OP", TK_OP},
+	{"TK_CL", TK_CL},
+	
+	// Complex tokens
+	{"TK_ID", TK_ID},
+	{"TK_NUM", TK_NUM},
+	{"TK_RNUM", TK_RNUM},
+	{"TK_FUNID", TK_FUNID},
+	{"TK_RUID", TK_RUID},
+	{"TK_FIELDID", TK_FIELDID},
+	{"TK_COMMENT", TK_COMMENT},
+	
+	// Epsilon
+	{"eps", EPSILON_TOKEN}
+};
+
+
 // Fill in all the non terminals
 typedef enum 
 {
