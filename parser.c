@@ -228,7 +228,7 @@ bool isTerminal(Symbol* sym)
 }
 
 // Convenience function to detect non terminals
-bool isTerminal(Symbol* sym)
+bool isVariable(Symbol* sym)
 {
 	return (sym->type == SYMBOL_TYPE_VARIABLE);
 }
