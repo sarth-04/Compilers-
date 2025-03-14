@@ -4,7 +4,8 @@
 #define NUM_TERMINALS 57
 // Special tokens for end of input and epsilon
 #define EPSILON_TOKEN -1    
-#define DOLLAR_TOKEN  -2   
+#define DOLLAR_TOKEN  -2 
+#define SYN_SET -3  
 
 // Fill in all the non terminals
 typedef enum 
@@ -214,7 +215,8 @@ typedef struct SymbolList
 typedef enum SymbolType
 {
 	SYMBOL_TYPE_TERMINAL,
-	SYMBOL_TYPE_VARIABLE
+	SYMBOL_TYPE_VARIABLE,
+	// SYN
 } SymbolType;
 
 typedef union type

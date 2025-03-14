@@ -529,6 +529,8 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 */
 // 2d array, with each element being a list of Symbols
 // [Variable][Terminal]
+// The Parse Table, instead of containing A -> B, will only contain 'B'(the RHS)
+// Variable can be inferred from the row. i.e. The LHS is simply the variable on top of the stack
 SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 {
 	// Allocate a 2D array: rows for non-terminals, columns for terminals.
@@ -564,7 +566,7 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 				if (!isEpsilon(term)) {
 					int termIndex = term->data.terminal; // Assumes terminals map into [0, NUM_TERMINALS)
 					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
-						table[i][termIndex] = production;
+						table[i][termIndex] = production; 
 					}
 				}
 			}
@@ -579,8 +581,25 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 					}
 				}
 			}
+			// Need to verify this code for populating parse table with 'syn' set tokens
+			else // does not contain epsilon, 
+			{
+				SymbolList* syn_prodn = createEmptySymbolList();
+				Symbol* syn_symbol = malloc(sizeof(Symbol));
+				syn_symbol->type = SYMBOL_TYPE_TERMINAL;
+				syn_symbol->data.terminal = SYN_SET;
+				syn_prodn->length = -1; // Another way to signal it's a part of the synchronisation set
+				syn_prodn->symbol_list[0] = syn_symbol; 
+				SymbolList* followA = ff.follow_sets[A]; // get all the elements in the follow set of the current variable
+				for (int k = 0; k < followA->length; k++) {
+					Symbol* term = followA->symbol_list[k];
+					int termIndex = term->data.terminal;
+					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
+						table[i][termIndex] = syn_prodn;
+					}
+				}
+			}
 			free(firstProd);
-			
 		}
 	}
 	return table;
