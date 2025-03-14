@@ -74,8 +74,8 @@ SymbolList* construct_symbol_list_from_string(char* str)
 		i++;
 	}
 	SymbolList* new_list = malloc(sizeof(SymbolList));
-	new_list->length = i - 1;// Last iter does not add to list of symbols
-	new_list->symbol_list = malloc(sizeof(Symbol) * (i-1));
+	new_list->length = i;// Last iter does not add to list of symbols
+	new_list->symbol_list = malloc(sizeof(Symbol) * (i+1)); // One extra 
 	for (int j = 0; j < i; j++)
 	{
 		new_list->symbol_list[j] = temp_list[j];
