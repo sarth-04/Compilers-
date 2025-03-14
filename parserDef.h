@@ -1,28 +1,229 @@
-#include "lexerDefDummy.h" // TODO: reconcile differences with actual lexerDef.h
+#include "lexerDef.h" // TODO: reconcile differences with actual lexerDef.h
+#define NUM_VARIABLES 53
+
+// Fill in all the non terminals
+typedef enum 
+{
+program,
+mainFunction,
+otherFunctions,
+function,
+input_par,
+output_par,
+parameter_list,
+dataType,
+primitiveDatatype,
+constructedDatatype,
+remaining_list,
+stmts,
+typeDefinitions,
+actualOrRedefined,
+typeDefinition,
+fieldDefinitions,
+fieldDefinition,
+fieldtype,
+moreFields,
+declarations,
+declaration,
+global_or_not,
+otherStmts,
+stmt,
+assignmentStmt,
+singleOrRecId,
+option_single_constructed,
+oneExpansion,
+moreExpansions,
+funCallStmt,
+outputParameters,
+inputParameters,
+iterativeStmt,
+conditionalStmt,
+elsePart,
+ioStmt,
+arithmeticExpression,
+expPrime,
+term,
+termPrime,
+factor,
+highPrecedenceOperator,
+lowPrecedenceOperators,
+booleanExpression,
+var,
+logicalOp,
+relationalOp,
+returnStmt,
+optionalReturn,
+idList,
+more_ids,
+definetypestmt,
+A
+} VariableType;
+
+VariableType variable_list[] = 
+{
+program,
+mainFunction,
+otherFunctions,
+function,
+input_par,
+output_par,
+parameter_list,
+dataType,
+primitiveDatatype,
+constructedDatatype,
+remaining_list,
+stmts,
+typeDefinitions,
+actualOrRedefined,
+typeDefinition,
+fieldDefinitions,
+fieldDefinition,
+fieldtype,
+moreFields,
+declarations,
+declaration,
+global_or_not,
+otherStmts,
+stmt,
+assignmentStmt,
+singleOrRecId,
+option_single_constructed,
+oneExpansion,
+moreExpansions,
+funCallStmt,
+outputParameters,
+inputParameters,
+iterativeStmt,
+conditionalStmt,
+elsePart,
+ioStmt,
+arithmeticExpression,
+expPrime,
+term,
+termPrime,
+factor,
+highPrecedenceOperator,
+lowPrecedenceOperators,
+booleanExpression,
+var,
+logicalOp,
+relationalOp,
+returnStmt,
+optionalReturn,
+idList,
+more_ids,
+definetypestmt,
+A
+};
+
+char* str_variable_list[] = 
+{
+"program",
+"mainFunction",
+"otherFunctions",
+"function",
+"input_par",
+"output_par",
+"parameter_list",
+"dataType",
+"primitiveDatatype",
+"constructedDatatype",
+"remaining_list",
+"stmts",
+"typeDefinitions",
+"actualOrRedefined",
+"typeDefinition",
+"fieldDefinitions",
+"fieldDefinition",
+"fieldtype",
+"moreFields",
+"declarations",
+"declaration",
+"global_or_not",
+"otherStmts",
+"stmt",
+"assignmentStmt",
+"singleOrRecId",
+"option_single_constructed",
+"oneExpansion",
+"moreExpansions",
+"funCallStmt",
+"outputParameters",
+"inputParameters",
+"iterativeStmt",
+"conditionalStmt",
+"elsePart",
+"ioStmt",
+"arithmeticExpression",
+"expPrime",
+"term",
+"termPrime",
+"factor",
+"highPrecedenceOperator",
+"lowPrecedenceOperators",
+"booleanExpression",
+"var",
+"logicalOp",
+"relationalOp",
+"returnStmt",
+"optionalReturn",
+"idList",
+"more_ids",
+"definetypestmt",
+"A"
+};
+
+
 // A grammar consists of rules A -> B, where A and B are non-terminals
 typedef struct grammar 
 {
-	Rule* *rules;
-	
+	VariableRule** vars_and_rules;
 } Grammar;
 
-typedef struct Rule
+// Stores all the rules associated with a particular variable
+typedef struct variable_rules 
 {
-	SymbolList LHS;
-	SymbolList RHS;
-} Rule;
+	VariableType variable;
+	int num_rules;
+	SymbolList** variable_rules; // A 2-D array, containing all possible RHSs of a particular variable
+} VariableRule;
+
+// typedef struct RulesList
+// {
+// 	int num_rules;
+// 	Rule** rules;
+// } RuleList;
+
+// typedef struct Rule
+// {
+// 	Symbol* LHS;
+// 	SymbolList* RHS;
+// } Rule;
 
 typedef struct SymbolList
 {
 	int length;
-	Symbol* symbol_list;
+	Symbol** symbol_list; // List of pointers to symbols, so **
 } SymbolList;
 
-typedef struct Symbol
+typedef enum SymbolType
 {
-	char** lexeme;
-	TokenType tok_type;
+	SYMBOL_TYPE_TERMINAL,
+	SYMBOL_TYPE_VARIABLE
+} SymbolType;
+
+typedef union type
+{
+	TokenType terminal;
+	VariableType non_terminal;
+} Type;
+
+typedef union Symbol
+{
+	SymbolType type;
+	Type data;
 } Symbol;
+
 
 typedef struct FirstAndFollow
 {
@@ -33,7 +234,6 @@ typedef struct ParseTable
 {
 	
 } ParseTable;
-
 
 typedef struct ParseTree
 {
