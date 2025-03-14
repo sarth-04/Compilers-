@@ -605,14 +605,101 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 	return table;
 }
 
-// TK_id, TK_whatever....
-ParseTreeNode parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** T)
+// Helper function, creates Symbols to encapsulate Variables(Non-Terminals)
+Symbol* createVariableSymbol(VariableType type)
 {
-	Token* tok = getNextToken(B, testcaseFile); // TODO: add params to this fn. call
+	Symbol* new_symbol = malloc(sizeof(Symbol));
+	new_symbol->type = SYMBOL_TYPE_VARIABLE;
+	new_symbol->data.non_terminal = type;
+	return new_symbol;
+}
+
+// Parse Tree construction starts here
+ParseTreeNode* createParseTreeNode(Symbol* symbol, ParseTreeNode* parent, Token* token)
+{
+	// Initialise with no children at first
+	ParseTreeNode* new_node = (ParseTreeNode*) (sizeof(ParseTreeNode));
+	new_node->symbol = copySymbol(symbol);
+	new_node->token = token; // Set to NULL for variables(since NULL is value of third param for variables)
+	new_node->parent = parent;
+	new_node->children = 0;
+	new_node->numChildren = 0;
+	return new_node;
+}
+
+
+// TwinBuffer should be a part of the real lexerDef.h
+ParseTreeNode parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** T, SymbolList** parse_table)
+{
+	Token* tok = getNextToken(B, testcaseFile); // Get the next token // TODO: add params to this fn. call
+	ParseTreeStack* stack = createStack(10);
+	ParseTreeNode* dollar_node = createParseTreeNode(createTerminalSymbol(DOLLAR_TOKEN),NULL,NULL);
+	push(stack, dollar_node); // Push dollar node to stack
+	ParseTreeNode* root = createParseTreeNode(createVariableSymbol(0),NULL,NULL);
+	ParseTreeNode* top_node = root;
+	push(stack, root);
+	while (top_node != DOLLAR_TOKEN && tok != NULL)
+	{
+		if (isEpsilon(top_node->symbol))
+		{
+			pop(stack);
+		} else if ((top_node->token != NULL) && (top_node->token->type == tok->type))
+		{
+			// Terminal on the stack same as terminal in input
+			pop(stack);
+		}else
+		{
+			SymbolList* prodn_rule = 
+		}
+	}
+	if (top_node != DOLLAR_TOKEN && tok == NULL)
+	{
+		// Invalid token error, do nothing
+	}
 }
 
 void PrintParseTree(ParseTreeNode T, char* outfile)
 {
 	// lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
-	
+    FILE* f = outfile ? fopen(outfile, "w") : stdout;
+    if (!f) {
+        printf(" Error Opening File!\n");
+        return;
+    }
+
+    fprintf(f, "Lexeme          NodeSymbol  LineNo TokenName  ParentSym  IsLeaf  NodeType\n");
+    fprintf(f, "----------------------------------------------------------------------------\n");
+    printParseTreeHelper(T->root, f);
+
+    if (outfile) fclose(f);
+}
+
+void printParseTreeHelper(NaryTreeNode *pt, FILE* f) {
+    if (!pt) return;
+
+    if (pt->IS_LEAF_NODE) {
+        fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
+                pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LEXEME : "EPSILON",
+                getTerminal(pt->NODE_TYPE.L.ENUM_ID),
+                pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LINE_NO : -1,
+                getTerminal(pt->NODE_TYPE.L.ENUM_ID),
+                pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
+                "yes", "----");
+    } else {
+        NaryTreeNode* child = pt->NODE_TYPE.NL.child;
+        if (child) {
+            printParseTreeHelper(child, f);
+            child = child->next;
+        }
+
+        fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
+                "----", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID), -1,
+                "----", pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
+                "no", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID));
+
+        while (child) {
+            printParseTreeHelper(child, f);
+            child = child->next;
+        }
+    }
 }
