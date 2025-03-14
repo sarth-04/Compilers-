@@ -661,45 +661,46 @@ ParseTreeNode parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList
 void PrintParseTree(ParseTreeNode T, char* outfile)
 {
 	// lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
-    FILE* f = outfile ? fopen(outfile, "w") : stdout;
-    if (!f) {
-        printf(" Error Opening File!\n");
-        return;
-    }
+	FILE* f = outfile ? fopen(outfile, "w") : stdout;
+	if (!f) {
+		printf(" Error Opening File!\n");
+		return;
+	}
 
-    fprintf(f, "Lexeme          NodeSymbol  LineNo TokenName  ParentSym  IsLeaf  NodeType\n");
-    fprintf(f, "----------------------------------------------------------------------------\n");
-    printParseTreeHelper(T->root, f);
+	fprintf(f, "Lexeme          NodeSymbol  LineNo TokenName  ParentSym  IsLeaf  NodeType\n");
+	fprintf(f, "----------------------------------------------------------------------------\n");
+	printParseTreeHelper(T->root, f);
 
-    if (outfile) fclose(f);
+	if (outfile) fclose(f);
 }
 
+// TODO(Rudresh): Change code to use ParseTreeNode type
 void printParseTreeHelper(NaryTreeNode *pt, FILE* f) {
-    if (!pt) return;
+	if (!pt) return;
 
-    if (pt->IS_LEAF_NODE) {
-        fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
-                pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LEXEME : "EPSILON",
-                getTerminal(pt->NODE_TYPE.L.ENUM_ID),
-                pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LINE_NO : -1,
-                getTerminal(pt->NODE_TYPE.L.ENUM_ID),
-                pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
-                "yes", "----");
-    } else {
-        NaryTreeNode* child = pt->NODE_TYPE.NL.child;
-        if (child) {
-            printParseTreeHelper(child, f);
-            child = child->next;
-        }
+	if (pt->IS_LEAF_NODE) {
+		fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
+				pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LEXEME : "EPSILON",
+				getTerminal(pt->NODE_TYPE.L.ENUM_ID),
+				pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LINE_NO : -1,
+				getTerminal(pt->NODE_TYPE.L.ENUM_ID),
+				pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
+				"yes", "----");
+	} else {
+		NaryTreeNode* child = pt->NODE_TYPE.NL.child;
+		if (child) {
+			printParseTreeHelper(child, f);
+			child = child->next;
+		}
 
-        fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
-                "----", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID), -1,
-                "----", pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
-                "no", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID));
+		fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
+				"----", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID), -1,
+				"----", pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
+				"no", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID));
 
-        while (child) {
-            printParseTreeHelper(child, f);
-            child = child->next;
-        }
-    }
+		while (child) {
+			printParseTreeHelper(child, f);
+			child = child->next;
+		}
+	}
 }
