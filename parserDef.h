@@ -247,6 +247,7 @@ typedef struct FirstAndFollow
 typedef struct ParseTreeNode {
 	Symbol* symbol;                // The grammar symbol (non-terminal or terminal) at this node.
 	Token* token;                  // The token from the lexer (only applicable for terminal nodes).
+	ParseTreeNode* parent;
 	int numChildren;               // Number of children nodes.
 	ParseTreeNode** children;  // Array of pointers to child nodes.
 } ParseTreeNode;
