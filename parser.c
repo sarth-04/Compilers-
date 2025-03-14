@@ -233,6 +233,7 @@ bool isVariable(Symbol* sym)
 	return (sym->type == SYMBOL_TYPE_VARIABLE);
 }
 
+// Will not lead to infinite recursion unless grammar has left recursion(cyclic dependencies)
 SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
 {
 	SymbolList* first_set = (SymbolList*) malloc(sizeof(SymbolList));
@@ -292,6 +293,11 @@ SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
 	if (variable->type == SYMBOL_TYPE_TERMINAL)
 		return follow;
 
+	if (variable->data.non_terminal == 0) // Checking if it's the start symbol
+	{
+		addSymbol(follow, createTerminalSymbol(DOLLAR_TOKEN));
+	}
+	
 	VariableType target = variable->data.non_terminal;
 
 	// Look through every production in the grammar.
