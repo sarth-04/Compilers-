@@ -173,7 +173,18 @@ char* str_variable_list[] =
 "A"
 };
 
+// Redundant grammar defns.(might be useful later)
+// typedef struct RulesList
+// {
+// 	int num_rules;
+// 	Rule** rules;
+// } RuleList;
 
+// typedef struct Rule
+// {
+// 	Symbol* LHS;
+// 	SymbolList* RHS;
+// } Rule;
 // A grammar consists of rules A -> B, where A and B are non-terminals
 typedef struct grammar 
 {
@@ -188,17 +199,6 @@ typedef struct variable_rules
 	SymbolList** variable_rules; // A 2-D array, containing all possible RHSs of a particular variable
 } VariableRule;
 
-// typedef struct RulesList
-// {
-// 	int num_rules;
-// 	Rule** rules;
-// } RuleList;
-
-// typedef struct Rule
-// {
-// 	Symbol* LHS;
-// 	SymbolList* RHS;
-// } Rule;
 
 typedef struct SymbolList
 {
@@ -227,7 +227,8 @@ typedef union Symbol
 
 typedef struct FirstAndFollow
 {
-	
+	SymbolList** first_sets; // Array of pointers to SymbolLists, raw value of variable acts as index for 
+	SymbolList** follow_sets; // Array of pointers to SymbolLists
 } FirstAndFollow;
 
 typedef struct ParseTable
