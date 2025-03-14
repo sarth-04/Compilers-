@@ -701,49 +701,104 @@ ParseTreeNode* parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolLis
 	return root;
 }
 
-void PrintParseTree(ParseTreeNode T, char* outfile)
-{
+// Print the parse tree starting from the root.
+void PrintParseTree(ParseTreeNode* root, char* outfile) {
 	// lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
-	FILE* f = outfile ? fopen(outfile, "w") : stdout;
-	if (!f) {
-		printf(" Error Opening File!\n");
+	FILE* f = (outfile != NULL) ? fopen(outfile, "w") : stdout; // Write to stdout if no file is provided
+	if (f == NULL) {
+		// Couldn't open file despite being given one
+		fprintf(stderr, "Error opening file '%s' for writing!\n", outfile);
 		return;
 	}
-
-	fprintf(f, "Lexeme          NodeSymbol  LineNo TokenName  ParentSym  IsLeaf  NodeType\n");
-	fprintf(f, "----------------------------------------------------------------------------\n");
-	printParseTreeHelper(T->root, f);
-
-	if (outfile) fclose(f);
+	
+	// Print header(easier to see)
+	fprintf(f, "%-15s %-15s %-7s %-15s %-15s %-7s %-15s\n", 
+			"Lexeme", "NodeSymbol", "LineNo", "TokenName", "ParentSym", "IsLeaf", "NodeType");
+	fprintf(f, "-----------------------------------------------------------------------------------------\n");
+	
+	// Recursively print the tree.
+	printParseTreeHelper(root, f);
+	
+	if (outfile != NULL)
+		fclose(f);
 }
 
-// TODO(Rudresh): Change code to use ParseTreeNode type
-void printParseTreeHelper(NaryTreeNode *pt, FILE* f) {
-	if (!pt) return;
-
-	if (pt->IS_LEAF_NODE) {
-		fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
-				pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LEXEME : "EPSILON",
-				getTerminal(pt->NODE_TYPE.L.ENUM_ID),
-				pt->NODE_TYPE.L.TK ? pt->NODE_TYPE.L.TK->LINE_NO : -1,
-				getTerminal(pt->NODE_TYPE.L.ENUM_ID),
-				pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
-				"yes", "----");
-	} else {
-		NaryTreeNode* child = pt->NODE_TYPE.NL.child;
-		if (child) {
-			printParseTreeHelper(child, f);
-			child = child->next;
+// Recursive helper to print the parse tree.
+void printParseTreeHelper(ParseTreeNode* node, FILE* f) {
+	// lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
+	if (node == NULL)
+		return;
+	
+	// Determine if the node is a leaf.
+	int isLeaf = (node->numChildren == 0);
+	
+	// Prepare values for printing.
+	char* lexeme = "----";
+	int lineNo = -1;
+	char tokenName[50] = "----";
+	
+	if (node->symbol->type == SYMBOL_TYPE_TERMINAL) {
+		// For terminals, use the token if available.
+		if (node->token != NULL) {
+			lexeme = node->token->lexeme;      
+			lineNo = node->token->line_no;
 		}
-
-		fprintf(f, "%-15s %-10s %-5d %-10s %-10s %-5s %-10s\n",
-				"----", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID), -1,
-				"----", pt->parent ? getNonTerminal(pt->parent->NODE_TYPE.NL.ENUM_ID) : "ROOT",
-				"no", getNonTerminal(pt->NODE_TYPE.NL.ENUM_ID));
-
-		while (child) {
-			printParseTreeHelper(child, f);
-			child = child->next;
+		// Get the terminal's string representation.
+		strcpy(tokenName, terminal_or_token_to_string(node->symbol->data.terminal));
+	}
+	
+	// Determine the NodeSymbol.
+	char* nodeSymbol = "----";
+	if (node->symbol->type == SYMBOL_TYPE_TERMINAL) {
+		nodeSymbol = terminal_or_token_to_string(node->symbol);
+	} else if (node->symbol->type == SYMBOL_TYPE_VARIABLE) {
+		// Look up non-terminal name from the global array.
+		int nt = node->symbol->data.non_terminal;
+		nodeSymbol = str_variable_list[nt];
+	}
+	
+	// Determine the parent's symbol.
+	char* parentSymbol = "ROOT";
+	if (node->parent != NULL) {
+		int p_nt = node->parent->symbol->data.non_terminal;
+		parentSymbol = str_variable_list[p_nt];
+	}
+	
+	// Determine the node type string.
+	char* nodeType = (node->symbol->type == SYMBOL_TYPE_TERMINAL) ? "Terminal" : "Non-Terminal";
+	
+	bool is_num = (node->token->type == TK_NUM) || ((node->token->type == TK_RNUM));
+	
+	double val = -1e9;
+	// Check if it's a number
+	if (node->token != NULL && is_num)
+	{
+		if (node->token->type == TK_NUM)
+		{
+			val = (double) atoi(node->token->lexeme);
 		}
+		else if (node->token->type == TK_RNUM)
+		{
+			val = (double) atof(node->token->lexeme);
+		}
+	}
+	
+	if (is_num)
+	{
+		// Print current node details.
+		fprintf(f, "%-15s %-15s %-7d %-15s %-15lf %-15s %-7s %-15s\n", 
+				lexeme, nodeSymbol, lineNo, tokenName, val, parentSymbol, (isLeaf ? "yes" : "no"), nodeType);
+		//lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
+	}else
+	{
+		// Print current node details.
+		fprintf(f, "%-15s %-15s %-7d %-15s %p %-15s %-7s %-15s\n", 
+				lexeme, nodeSymbol, lineNo, tokenName, NULL, parentSymbol, (isLeaf ? "yes" : "no"), nodeType);
+		//lexeme CurrentNode lineno tokenName  parentNodeSymbol isLeafNode(yes/no) NodeSymbol
+	}
+	
+	// Recursively print each child.
+	for (int i = 0; i < node->numChildren; i++) {
+		printParseTreeHelper(node->children[i], f);
 	}
 }
