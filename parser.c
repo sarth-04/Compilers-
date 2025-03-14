@@ -511,25 +511,26 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 					}
 				}
 			}
-			// Need to verify this code for populating parse table with 'syn' set tokens
-			else // does not contain epsilon, 
-			{
+			free(firstProd);
+		}
+		
+		// Only now will we dabble in the dark arts of the syn set
+		SymbolList* followA = ff.follow_sets[A];
+		for (int k = 0; k < followA->length; k++) {
+			Symbol* term = followA->symbol_list[k];
+			int termIndex = term->data.terminal;
+			// If no production was defined for this terminal, add a sync entry.
+			if (termIndex >= 0 && termIndex < NUM_TERMINALS && table[i][termIndex] == NULL) {
 				SymbolList* syn_prodn = createEmptySymbolList();
+				// For example, if createEmptySymbolList doesn't allocate space for symbols, do it here.
+				syn_prodn->length = -1; // Using -1 to signal a sync production.
 				Symbol* syn_symbol = malloc(sizeof(Symbol));
 				syn_symbol->type = SYMBOL_TYPE_TERMINAL;
 				syn_symbol->data.terminal = SYN_SET;
-				syn_prodn->length = -1; // Another way to signal it's a part of the synchronisation set
-				syn_prodn->symbol_list[0] = syn_symbol; 
-				SymbolList* followA = ff.follow_sets[A]; // get all the elements in the follow set of the current variable
-				for (int k = 0; k < followA->length; k++) {
-					Symbol* term = followA->symbol_list[k];
-					int termIndex = term->data.terminal;
-					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
-						table[i][termIndex] = syn_prodn;
-					}
-				}
+				// syn_prodn->symbol_list[0] = syn_symbol; // Incorrect earlier version, no space for pointer
+				addSymbol(syn_prodn,syn_symbol);
+				table[i][termIndex] = syn_prodn;
 			}
-			free(firstProd);
 		}
 	}
 	return table;
