@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "parserDef.h"
+#include "lexer.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -631,10 +632,20 @@ bool token_present_in_set(SymbolList* set, TokenType tok_type)
 	return false;
 }
 
+Token* getNextTokenHelper(twinBuffer* B, int fd)
+{
+	tokenInfo* tok_info = getNextToken(B, fd);
+	Token* new_token = (Token*) malloc(sizeof(Token));
+	new_token->lexeme = tok_info->lexeme;
+	new_token->line_no = tok_info->line_no;
+	new_token->type = string_to_terminal(tok_info->token);
+	return new_token;
+}
+
 // TwinBuffer should be a part of the real lexerDef.h
-ParseTreeNode* parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolList*** parseTable, /* for our purposes we assume */ FirstAndFollow ff) {
+ParseTreeNode* parseInputSourceCode(twinBuffer *B, int fd, SymbolList*** parseTable, /* for our purposes we assume */ FirstAndFollow ff) {
 	// Get the first token.
-	Token* tok = getNextToken(B, testcaseFile);
+	Token* tok = getNextTokenHelper(B, fd);
 	
 	// Create the parse tree stack.
 	ParseTreeStack* stack = createStack(10);
@@ -663,12 +674,12 @@ ParseTreeNode* parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolLis
 				// Terminal matches the current token.
 				top_node->token = tok;  // Link the token to the parse tree node.
 				pop(stack);
-				tok = getNextToken(B, testcaseFile);
+				tok = getNextTokenHelper(B, fd);
 			} else {
 				// Terminal mismatch: report error and discard token.
 				printf("Error at line %d: Terminal mismatch. Expected %s but found %s. Discarding token.\n",
 					   tok->line_no, terminal_or_token_to_string(top_node->token->type), terminal_or_token_to_string(tok->type));
-				tok = getNextToken(B, testcaseFile);
+				tok = getNextTokenHelper(B, fd);
 			}
 			continue;
 		}
@@ -697,7 +708,7 @@ ParseTreeNode* parseInputSourceCode(TwinBuffer *B, char *testcaseFile, SymbolLis
 			while (tok != NULL && !token_present_in_set(first_set,tok->type) && !token_present_in_set(follow_set, tok->type)) {
 				printf("Error at line %d: Token %s not in FIRST or FOLLOW set of non-terminal '%s'. Discarding token.\n",
 					   tok->line_no, tokenToString(tok), str_variable_list[varIndex]);
-				tok = getNextToken(B, testcaseFile);
+				tok = getNextToken(B, fd);
 			}
 			if (tok == NULL)
 				break;  // End of input.
