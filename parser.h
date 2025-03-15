@@ -39,7 +39,7 @@ ParseTreeNode* createParseTreeNode(Symbol* symbol, ParseTreeNode* parent, Token*
 Symbol* createVariableSymbol(VariableType type);
 
 // Parsing functions
-ParseTreeNode* parseInputSourceCode(twinBuffer *B, char *testcaseFile, SymbolList*** parseTable, FirstAndFollow ff);
+ParseTreeNode* parseInputSourceCode(twinBuffer *B, int fd, SymbolList*** parseTable, FirstAndFollow ff);
 
 // Utility functions
 char* terminal_or_token_to_string(TokenType terminal_type);
