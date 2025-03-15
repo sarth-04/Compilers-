@@ -1,10 +1,3 @@
-// Name:ANISH TAORI                    ID: 2021A7PS0939P
-// Name:GARVIT SINGHAL                 ID:  2021A7PS2226P
-// Name:ROSHAN BAGLA                   ID: 2021A7PS2538P
-// Name:ADITYA DESHPANDE               ID: 2021A7PS2681P
-// Name:AADITYA KULKARNI               ID: 2021A7PS0426P
-// Name:YASH KANDOI                    ID: 2021A7PS2417P
-
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
