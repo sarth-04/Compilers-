@@ -6,6 +6,7 @@
 #define EPSILON_TOKEN -1    
 #define DOLLAR_TOKEN  -2 
 #define SYN_SET -3  
+#define TK_ERROR -4
 
 
 typedef enum {
@@ -28,10 +29,8 @@ typedef enum {
 	
 	// Complex tokens
 	TK_ID, TK_NUM, TK_RNUM, TK_FUNID, TK_RUID,
-	TK_FIELDID, TK_COMMENT,
+	TK_FIELDID, TK_COMMENT, 
 	
-	// // Special tokens, does not occur, but neccessary anyway
-	// EPSILON_TOKEN, DOLLAR_TOKEN
 } TokenType;
 
 TokenType mapping[] = {
@@ -323,31 +322,11 @@ char* str_variable_list[] =
 // 	SymbolList* RHS;
 // } Rule;
 // A grammar consists of rules A -> B, where A and B are non-terminals
-typedef struct grammar 
-{
-	VariableRule** vars_and_rules;
-} Grammar;
-
-// Stores all the rules associated with a particular variable
-typedef struct variable_rules 
-{
-	VariableType variable;
-	int num_rules;
-	SymbolList** variable_rules; // A 2-D array, containing all possible RHSs of a particular variable
-} VariableRule;
-
-
-typedef struct SymbolList
-{
-	int length;
-	ParserSymbol** symbol_list; // List of pointers to symbols, so **
-} SymbolList;
 
 typedef enum SymbolType
 {
 	SYMBOL_TYPE_TERMINAL,
-	SYMBOL_TYPE_VARIABLE,
-	// SYN
+	SYMBOL_TYPE_VARIABLE
 } SymbolType;
 
 typedef union type
@@ -356,11 +335,34 @@ typedef union type
 	VariableType non_terminal;
 } Type;
 
-typedef union ParserSymbol
+typedef struct ParserSymbol
 {
 	SymbolType type;
 	Type data;
 } ParserSymbol;
+
+typedef struct SymbolList
+{
+	int length;
+	ParserSymbol** symbol_list; // List of pointers to symbols, so **
+} SymbolList;
+
+typedef struct variable_rules 
+{
+	VariableType variable;
+	int num_rules;
+	SymbolList** variable_rules; // A 2-D array, containing all possible RHSs of a particular variable
+} VariableRule;
+
+
+typedef struct grammar 
+{
+	VariableRule** vars_and_rules;
+} Grammar;
+
+// Stores all the rules associated with a particular variable
+
+
 
 
 typedef struct FirstAndFollow
@@ -378,7 +380,7 @@ typedef struct FirstAndFollow
 typedef struct parseTreeNode {
 	ParserSymbol* symbol;                // The grammar symbol (non-terminal or terminal) at this node.
 	Token* token;                  // The token from the lexer (only applicable for terminal nodes).
-	ParseTreeNode* parent;
+	struct ParseTreeNode* parent;
 	int numChildren;               // Number of children nodes.
-	ParseTreeNode** children;  // Array of pointers to child nodes.
+	struct ParseTreeNode** children;  // Array of pointers to child nodes.
 } ParseTreeNode;
