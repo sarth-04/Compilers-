@@ -97,7 +97,10 @@ Grammar* getGrammarFromFile(char** file_name)
 	SymbolList* RHS;
 	fp = fopen(*file_name, "r");
 	if (fp == NULL)
-		printf("Couldn't open grammar file\n");exit(1); 
+	{
+		printf("Couldn't open grammar file\n");
+		return NULL;
+	}
 
 	SymbolList** temp_rules_list = malloc(sizeof(SymbolList*) * 5); // Temporarily store all prodn. rules for a variable
 	int num_var_rules = 0; // NUmber of productions for one variable
@@ -534,6 +537,43 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 		}
 	}
 	return table;
+}
+
+
+void print_symbol_list(SymbolList* sym_list)
+{
+	int n = sym_list->length;
+	Symbol** list = sym_list->symbol_list;
+	Symbol* curr_sym;
+	for (int i = 0; i < n; i++)
+	{
+		curr_sym = list[i];
+		if (curr_sym->type==SYMBOL_TYPE_TERMINAL)
+		{
+			printf("%s,",terminal_or_token_to_string(curr_sym->data.terminal));
+		}else
+		{
+			printf("%s,",variable_to_string(curr_sym->data.non_terminal));
+		}
+	}
+	print(" ");
+}
+
+//
+void print_parse_table(SymbolList*** parse_table)
+{
+	SymbolList* curr_list;
+	for (int var_num = 0; var_num < NUM_VARIABLES; var_num+=1)
+	{
+		printf("Current variable: %s\n", variable_to_string(variable_list[var_num]));
+		for (int term_num = 0; term_num < NUM_TERMINALS; term_num+=1)
+		{
+			print("Current terminal: %s\n", terminal_or_token_to_string(mapping[term_num]));
+			curr_list = parse_table[var_num][term_num];
+			// print all the productions
+			print_symbol_list(curr_list);
+		}
+	}
 }
 
 // Helper function, creates Symbols to encapsulate Variables(Non-Terminals)
