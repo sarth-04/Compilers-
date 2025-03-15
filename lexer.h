@@ -1,5 +1,3 @@
-
-
 #ifndef LEXICAL_H
 #define LEXICAL_H
 #include "lexerDef.h"
