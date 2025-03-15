@@ -44,9 +44,9 @@ VariableType string_to_variable(const char* str)
 
 
 // Return appropriate symbol from string
-Symbol* construct_symbol(char* str)
+ParserSymbol* construct_symbol(char* str)
 {
-	Symbol* new_symbol = malloc(sizeof(Symbol));
+	ParserSymbol* new_symbol = malloc(sizeof(Symbol));
 	// First look in variables
 	VariableType res = string_to_variable(str);
 	if (res == NULL) // Terminal, not variable
@@ -64,7 +64,7 @@ Symbol* construct_symbol(char* str)
 SymbolList* construct_symbol_list_from_string(char* str)
 {
 	// Take string containing space separated symbols, return array of Symbols
-	Symbol** temp_list = malloc(10*sizeof(Symbol));
+	ParserSymbol** temp_list = malloc(10*sizeof(Symbol));
 	char* next_symbol; 
 	next_symbol = strtok(str, " ");
 	int i = 0;
@@ -93,7 +93,7 @@ Grammar* getGrammarFromFile(char** file_name)
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
-	Symbol* Variable;
+	ParserSymbol* Variable;
 	char* rhs_string; // Temporary string to store rhs of a particular rule
 	SymbolList* RHS;
 	fp = fopen(*file_name, "r");
@@ -136,8 +136,8 @@ Grammar* getGrammarFromFile(char** file_name)
 	return grammar;
 }
 
-Symbol* copySymbol(Symbol* original) {
-	Symbol* copy = (Symbol*)malloc(sizeof(Symbol));
+ParserSymbol* copySymbol(ParserSymbol* original) {
+	ParserSymbol* copy = (ParserSymbol*)malloc(sizeof(Symbol));
 	copy->type = original->type;
 	if (original->type == SYMBOL_TYPE_TERMINAL)
 		copy->data.terminal = original->data.terminal;
@@ -158,7 +158,7 @@ SymbolList* createEmptySymbolList() {
 
 
 // Checks if two symbols are equal.
-bool symbolEquals(Symbol* a, Symbol* b) {
+bool symbolEquals(ParserSymbol* a, ParserSymbol* b) {
 	if (a->type != b->type)
 		 return false;
 	if (a->type == SYMBOL_TYPE_TERMINAL)
@@ -168,7 +168,7 @@ bool symbolEquals(Symbol* a, Symbol* b) {
 }
 
 // Returns true if the symbol list already contains the symbol.
-bool symbolListContains(SymbolList* list, Symbol* sym) {
+bool symbolListContains(SymbolList* list, ParserSymbol* sym) {
 	for (int i = 0; i < list->length; i++) {
 		 if (symbolEquals(list->symbol_list[i], sym))
 			  return true;
@@ -177,30 +177,30 @@ bool symbolListContains(SymbolList* list, Symbol* sym) {
 }
 
 // Adds sym to list if not already present.
-void addSymbol(SymbolList* list, Symbol* sym) {
+void addSymbol(SymbolList* list, ParserSymbol* sym) {
 	if (symbolListContains(list, sym))
 		 return ;
 	list->length++;
-	list->symbol_list = realloc(list->symbol_list, list->length * sizeof(Symbol*));
+	list->symbol_list = realloc(list->symbol_list, list->length * sizeof(ParserSymbol*));
 	list->symbol_list[list->length - 1] = copySymbol(sym);
 	return ;
 }
 
 // Create a new terminal symbol for a given token.
-Symbol* createTerminalSymbol(TokenType token) {
-	Symbol* s = (Symbol*)malloc(sizeof(Symbol));
+ParserSymbol* createTerminalSymbol(TokenType token) {
+	ParserSymbol* s = (ParserSymbol*)malloc(sizeof(Symbol));
 	s->type = SYMBOL_TYPE_TERMINAL;
 	s->data.terminal = token;
 	return s;
 }
 
 // Creates a symbol representing ε.
-Symbol* createEpsilonSymbol() {
+ParserSymbol* createEpsilonSymbol() {
 	return createTerminalSymbol(EPSILON_TOKEN);
 }
 
 // Returns true if the given symbol represents ε. Small wrapper function to make things easier
-bool isEpsilon(Symbol* sym) {
+bool isEpsilon(ParserSymbol* sym) {
 	return (sym->type == SYMBOL_TYPE_TERMINAL && sym->data.terminal == EPSILON_TOKEN);
 }
 
@@ -226,19 +226,19 @@ void freeSymbolList(SymbolList* list) {
 }
 
 // Convenience function to detect terminals
-bool isTerminal(Symbol* sym)
+bool isTerminal(ParserSymbol* sym)
 {
 	return (sym->type == SYMBOL_TYPE_TERMINAL);
 }
 
 // Convenience function to detect non terminals
-bool isVariable(Symbol* sym)
+bool isVariable(ParserSymbol* sym)
 {
 	return (sym->type == SYMBOL_TYPE_VARIABLE);
 }
 
 // Will not lead to infinite recursion unless grammar has left recursion(cyclic dependencies)
-SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
+SymbolList* ComputeFirstSet(Grammar* grammar, ParserSymbol* variable)
 {
 	SymbolList* first_set = (SymbolList*) malloc(sizeof(SymbolList));
 	// Base case, terminal includes eps here
@@ -261,7 +261,7 @@ SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
 		// Process the production from left to right.
 		for (int j = 0; j < current_production->length; j++)
 		{
-			Symbol* currSym = current_production->symbol_list[j];
+			ParserSymbol* currSym = current_production->symbol_list[j];
 			SymbolList* firstOfCurr = ComputeFirstSet(grammar, currSym);
 
 			// Add everything in FIRST(currSym) except ε.
@@ -281,7 +281,7 @@ SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
 		// If all symbols in the production can produce ε, add ε to FIRST.
 		if (productionNullable)
 		{
-			Symbol* eps = createEpsilonSymbol();
+			ParserSymbol* eps = createEpsilonSymbol();
 			addSymbol(first_set, eps);
 		}
 		
@@ -289,7 +289,7 @@ SymbolList* ComputeFirstSet(Grammar* grammar, Symbol* variable)
 	return first_set;
 }
 
-SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
+SymbolList* ComputeFollowSet(Grammar* grammar, ParserSymbol* variable)
 {
 	SymbolList* follow = createEmptySymbolList();
 
@@ -309,7 +309,7 @@ SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
 	{
 		VariableRule* vr = grammar->vars_and_rules[i];
 		// LHS of the production.
-		Symbol lhs;
+		ParserSymbol lhs;
 		lhs.type = SYMBOL_TYPE_VARIABLE;
 		lhs.data.non_terminal = vr->variable;
 
@@ -320,7 +320,7 @@ SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
 			// Look for an occurrence of the target non-terminal in the production.
 			for (int j = 0; j < production->length; j++)
 			{
-				Symbol* s = production->symbol_list[j];
+				ParserSymbol* s = production->symbol_list[j];
 				if (s->type == SYMBOL_TYPE_VARIABLE &&
 					s->data.non_terminal == target)
 				{
@@ -328,7 +328,7 @@ SymbolList* ComputeFollowSet(Grammar* grammar, Symbol* variable)
 					// Process symbols following s (i.e. beta).
 					for (int k = j + 1; k < production->length; k++)
 					{
-						Symbol* betaSym = production->symbol_list[k];
+						ParserSymbol* betaSym = production->symbol_list[k];
 						SymbolList* firstBeta = ComputeFirstSet(grammar, betaSym);
 
 						// Add FIRST(betaSym) minus ε to FOLLOW(target).
@@ -370,7 +370,7 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 	// Compute FIRST sets for every non-terminal.
 	for (int i = 0; i < NUM_VARIABLES; i++)
 	{
-		Symbol nonTerm;
+		ParserSymbol nonTerm;
 		nonTerm.type = SYMBOL_TYPE_VARIABLE;
 		nonTerm.data.non_terminal = variable_list[i];
 		ff->first_sets[i] = ComputeFirstSet(grammar, &nonTerm);
@@ -378,7 +378,7 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 	}
 
 	// Initialize FOLLOW(start symbol)
-	Symbol* dollar = createTerminalSymbol(DOLLAR_TOKEN);
+	ParserSymbol* dollar = createTerminalSymbol(DOLLAR_TOKEN);
 	addSymbol(ff->follow_sets[program], dollar);
 
 	// Iteratively update the FOLLOW sets until no changes occur.
@@ -391,7 +391,7 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 		for (int i = 0; i < NUM_VARIABLES; i++)
 		{
 			VariableRule* vr = grammar->vars_and_rules[i];
-			Symbol lhs;
+			ParserSymbol lhs;
 			lhs.type = SYMBOL_TYPE_VARIABLE;
 			lhs.data.non_terminal = vr->variable;
 			int lhsIndex = vr->variable;  // Raw value of variable
@@ -404,7 +404,7 @@ FirstAndFollow* ComputeFirstAndFollowSet(Grammar* grammar)
 				production = vr->variable_rules[r];
 				for (int j = 0; j < production->length; j++)
 				{
-					Symbol* B = production->symbol_list[j];
+					ParserSymbol* B = production->symbol_list[j];
 					if (B->type == SYMBOL_TYPE_VARIABLE)
 					{
 						int BIndex = B->data.non_terminal;
@@ -496,7 +496,7 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 
 			// For every terminal in FIRST(α) (except epsilon), set table[A][terminal] = production.
 			for (int k = 0; k < firstProd->length; k++) {
-				Symbol* term = firstProd->symbol_list[k];
+				ParserSymbol* term = firstProd->symbol_list[k];
 				if (!isEpsilon(term)) {
 					int termIndex = term->data.terminal; // Assumes terminals map into [0, NUM_TERMINALS)
 					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
@@ -508,7 +508,7 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 			if (containsEpsilon(firstProd)) {
 				SymbolList* followA = ff.follow_sets[A];
 				for (int k = 0; k < followA->length; k++) {
-					Symbol* term = followA->symbol_list[k];
+					ParserSymbol* term = followA->symbol_list[k];
 					int termIndex = term->data.terminal;
 					if (termIndex >= 0 && termIndex < NUM_TERMINALS) {
 						table[i][termIndex] = production;
@@ -521,14 +521,14 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 		// Only now will we dabble in the dark arts of the syn set
 		SymbolList* followA = ff.follow_sets[A];
 		for (int k = 0; k < followA->length; k++) {
-			Symbol* term = followA->symbol_list[k];
+			ParserSymbol* term = followA->symbol_list[k];
 			int termIndex = term->data.terminal;
 			// If no production was defined for this terminal, add a sync entry.
 			if (termIndex >= 0 && termIndex < NUM_TERMINALS && table[i][termIndex] == NULL) {
 				SymbolList* syn_prodn = createEmptySymbolList();
 				// For example, if createEmptySymbolList doesn't allocate space for symbols, do it here.
 				syn_prodn->length = -1; // Using -1 to signal a sync production.
-				Symbol* syn_symbol = malloc(sizeof(Symbol));
+				ParserSymbol* syn_symbol = malloc(sizeof(Symbol));
 				syn_symbol->type = SYMBOL_TYPE_TERMINAL;
 				syn_symbol->data.terminal = SYN_SET;
 				// syn_prodn->symbol_list[0] = syn_symbol; // Incorrect earlier version, no space for pointer
@@ -544,8 +544,8 @@ SymbolList*** createParseTable(Grammar* grammar, FirstAndFollow ff)
 void print_symbol_list(SymbolList* sym_list)
 {
 	int n = sym_list->length;
-	Symbol** list = sym_list->symbol_list;
-	Symbol* curr_sym;
+	ParserSymbol** list = sym_list->symbol_list;
+	ParserSymbol* curr_sym;
 	for (int i = 0; i < n; i++)
 	{
 		curr_sym = list[i];
@@ -578,16 +578,16 @@ void print_parse_table(SymbolList*** parse_table)
 }
 
 // Helper function, creates Symbols to encapsulate Variables(Non-Terminals)
-Symbol* createVariableSymbol(VariableType type)
+ParserSymbol* createVariableSymbol(VariableType type)
 {
-	Symbol* new_symbol = malloc(sizeof(Symbol));
+	ParserSymbol* new_symbol = malloc(sizeof(Symbol));
 	new_symbol->type = SYMBOL_TYPE_VARIABLE;
 	new_symbol->data.non_terminal = type;
 	return new_symbol;
 }
 
 // Parse Tree construction starts here
-ParseTreeNode* createParseTreeNode(Symbol* symbol, ParseTreeNode* parent, Token* token)
+ParseTreeNode* createParseTreeNode(ParserSymbol* symbol, ParseTreeNode* parent, Token* token)
 {
 	// Initialise with no children at first
 	ParseTreeNode* new_node = (ParseTreeNode*) (sizeof(ParseTreeNode));
@@ -621,7 +621,7 @@ char* variable_to_string(VariableType variable_type)
 // Checks if token type is present in List of symbols
 bool token_present_in_set(SymbolList* set, TokenType tok_type)
 {
-	Symbol** list = set->symbol_list;
+	ParserSymbol** list = set->symbol_list;
 	for (int i = 0; i < set->length; i+=1)
 	{
 		if (list[i]->data.terminal == tok_type)
@@ -643,7 +643,7 @@ Token* getNextTokenHelper(twinBuffer* B, int fd)
 }
 
 // TwinBuffer should be a part of the real lexerDef.h
-ParseTreeNode* parseInputSourceCode(twinBuffer *B, int fd, SymbolList*** parseTable, /* for our purposes we assume */ FirstAndFollow ff) {
+ParseTreeNode* parseInputSourceCode(twinBuffer *B, int fd, SymbolList*** parseTable, FirstAndFollow ff) {
 	// Get the first token.
 	Token* tok = getNextTokenHelper(B, fd);
 	
@@ -740,7 +740,7 @@ ParseTreeNode* parseInputSourceCode(twinBuffer *B, int fd, SymbolList*** parseTa
 		top_node->children = malloc(production->length * sizeof(ParseTreeNode*));
 		// Push production symbols in reverse order (skipping epsilon symbols).
 		for (int i = production->length - 1; i >= 0; i--) {
-			Symbol* sym = production->symbol_list[i];
+			ParserSymbol* sym = production->symbol_list[i];
 			ParseTreeNode* child = createParseTreeNode(sym, top_node, NULL);
 			top_node->children[i] = child;
 			if (!isEpsilon(sym))

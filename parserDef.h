@@ -52,12 +52,6 @@ TokenType mapping[] = {
 	// EPSILON_TOKEN, DOLLAR_TOKEN // Not present
 };
 
-typedef struct twinBuffer
-{
-    char *buffer1;
-    char *buffer2;
-} twinBuffer;
-
 typedef struct Token
 {
 	char* lexeme;
@@ -67,13 +61,13 @@ typedef struct Token
 } Token;
 
 // Define token mapping structure
-typedef struct {
+typedef struct TokMap{
 	const char* name;
 	TokenType value;
-} TokenMap;
+} TokMap;
 
 // Create static lookup table
-const TokenMap token_map[] = {
+const TokMap token_map[] = {
 	// Keywords
 	{"TK_WITH", TK_WITH},
 	{"TK_PARAMETERS", TK_PARAMETERS},
@@ -346,7 +340,7 @@ typedef struct variable_rules
 typedef struct SymbolList
 {
 	int length;
-	Symbol** symbol_list; // List of pointers to symbols, so **
+	ParserSymbol** symbol_list; // List of pointers to symbols, so **
 } SymbolList;
 
 typedef enum SymbolType
@@ -362,11 +356,11 @@ typedef union type
 	VariableType non_terminal;
 } Type;
 
-typedef union Symbol
+typedef union ParserSymbol
 {
 	SymbolType type;
 	Type data;
-} Symbol;
+} ParserSymbol;
 
 
 typedef struct FirstAndFollow
@@ -381,8 +375,8 @@ typedef struct FirstAndFollow
 // } ParseTable;
 
 // A node in the parse tree.
-typedef struct ParseTreeNode {
-	Symbol* symbol;                // The grammar symbol (non-terminal or terminal) at this node.
+typedef struct parseTreeNode {
+	ParserSymbol* symbol;                // The grammar symbol (non-terminal or terminal) at this node.
 	Token* token;                  // The token from the lexer (only applicable for terminal nodes).
 	ParseTreeNode* parent;
 	int numChildren;               // Number of children nodes.
