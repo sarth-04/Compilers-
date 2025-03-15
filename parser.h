@@ -19,7 +19,7 @@ void createParseTable(FirstAndFollow F, table T);
 parseTree parseInputSourceCode(char *testcaseFile, table T);
 
 // Function to print the parse tree
-void printParseTree(parseTree root, char *outfile);
+void printParseTree(parseTree PT, char *outfile);
 
 // Funtion to find the location of the terminal or non terminal in the ter
 int find_location(char *term);

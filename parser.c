@@ -110,6 +110,41 @@ parseTree createNewNode()
     strcpy(node->lexeme, "");
     return node;
 }
+void printNode(FILE *outfile, parseTree node) {
+    if (node == NULL) return;
+
+    // Determine whether the node is a leaf
+    const char *isLeaf = (node->child == NULL) ? "yes" : "no";
+
+    // Determine the lexeme or use "----" for non-leaf nodes
+    const char *lexeme = (strcmp(isLeaf, "yes") == 0) ? node->lexeme : "----";
+
+    // Determine the parent node symbol
+    const char *parentSymbol = (node->parent == NULL) ? "ROOT" : node->parent->symbol;
+
+    // Print the information in the required format
+    fprintf(outfile, "%-15s %-10d %-20s %-15s %-20s %-10s %-20s\n",
+            lexeme,
+            node->lineNo,
+            node->tokenName,
+            (strcmp(node->tokenName, "TK_NUM") == 0 || strcmp(node->tokenName, "TK_RNUM") == 0) ? node->valueIfNumber : "---",
+            parentSymbol,
+            isLeaf,
+            node->symbol);
+}
+
+// Recursive inorder traversal to print the parse tree
+void inorderTraversal(FILE *outfile, parseTree node) {
+    if (node == NULL) return;
+
+    // Visit all children before printing the current node
+    for (int i = 0; i < node->sizeofChild; i++) {
+        inorderTraversal(outfile, node->child[i]);
+    }
+
+    // Print the current node
+    printNode(outfile, node);
+}
 
 // Function to parse the given token
 void parseFile(char *token, char *lexeme, int lineNo, table T, Stack *s, grammar G)
@@ -210,15 +245,14 @@ void parseFile(char *token, char *lexeme, int lineNo, table T, Stack *s, grammar
 }
 
 // Function to parse the testcase File
-parseTree parseInputSourceCode(char *testcaseFile, table T)
-{
+parseTree parseInputSourceCode(char *testcaseFile, table T) {
     Stack *s = newStack();
     parseTree root = createNewNode();
     root->parent = NULL;
-    root->current = 1;
+    root->current = 1; // Root node
     push(s, root);
-    if (lexer_initialized == 0)
-    {
+
+    if (lexer_initialized == 0) {
         lexeme_array1 = initialize_lexeme_array();
         symbol_table1 = initialize_symbol_table();
         token_map1 = initialize_token_map();
@@ -229,86 +263,91 @@ parseTree parseInputSourceCode(char *testcaseFile, table T)
         initialise_buffers(B1);
         lexer_initialized = 1;
     }
+
     int f = open(testcaseFile, O_RDONLY);
-    if (f == -1)
-    {
+    if (f == -1) {
         printf("Error opening file\n");
         exit(1);
     }
+
     readBufferParse(f, B1);
     initialise_pointers(B1);
+
     tokenInfo *t;
-    printf("\n");
-    while (true)
-    {
+    while (true) {
         t = getNextToken(B1, f);
         if (strcmp(t->token, "FINISHED") == 0)
             break;
         if (strcmp(t->token, "ERROR") == 0)
             continue;
+        // Print token information
         printf("Line no:%d\tLexeme: %-20sTokenName: %-20s\n", t->line_no, t->lexeme, t->token);
+
+
         parseFile(t->token, t->lexeme, t->line_no, T, s, G);
         free(t);
     }
     printf("\nBoth lexer and syntax module developed.\n\n");
+
     free(s);
     close(f);
 
     return root;
 }
 
-
 // Recursive function which helps in printing the parse tree
-void outputTree(parseTree root, FILE *fd)
-{
-    int sz = root->sizeofChild;
-    if (sz >= 1)
-        outputTree(root->child[0], fd);
-    char leaf[4];
-    char dummy[5] = "----";
-    if (sz == 0)
-    {
-        strcpy(leaf, "yes");
-        if (root->current == EPLS)
-            strcpy(root->lexeme, "eps");
-    }
-    else
-    {
-        strcpy(leaf, "no");
-        strcpy(root->lexeme, dummy);
-    }
+void outputTree(parseTree root, FILE *fd) {
+    if (root == NULL) return;
 
-    if (root->current == 1)
-    {
-        fprintf(fd, "%-15s\t %-3d\t %-22s\t %-10s\t %-22s\t %-4s\t %-22s\t \n", "----", root->lineNo, grammarTerms[root->current], "----", "$", leaf, grammarTerms[root->current]);
-    }
-    else
-    {
-        if (strcmp(grammarTerms[root->current], "TK_NUM") == 0)
-            fprintf(fd, "%-15s\t %-3d\t %-22s\t %-10d\t %-22s\t %-4s\t %-22s\t \n", root->lexeme, root->lineNo, grammarTerms[root->current], atoi(root->lexeme), grammarTerms[root->parent->current], leaf, grammarTerms[root->current]);
-        else if (strcmp(grammarTerms[root->current], "TK_RNUM") == 0)
-            fprintf(fd, "%-15s\t %-3d\t %-22s\t %-10.5f\t %-22s\t %-4s\t %-22s\t \n", root->lexeme, root->lineNo, grammarTerms[root->current], atof(root->lexeme), grammarTerms[root->parent->current], leaf, grammarTerms[root->current]);
-        else
-            fprintf(fd, "%-15s\t %-3d\t %-22s\t %-10s\t %-22s\t %-4s\t %-22s\t \n", root->lexeme, root->lineNo, grammarTerms[root->current], "----", grammarTerms[root->parent->current], leaf, grammarTerms[root->current]);
-    }
-
-    for (int i = 1; i < sz; i++)
+    // Perform inorder traversal for children
+    for (int i = 0; i < root->sizeofChild; i++) {
         outputTree(root->child[i], fd);
+    }
+
+    // Determine if the node is a leaf
+    const char *isLeaf = (root->sizeofChild == 0) ? "yes" : "no";
+
+    // Determine lexeme or dummy string for non-leaf nodes
+    const char *lexeme = (strcmp(isLeaf, "yes") == 0) ? root->lexeme : "----";
+
+    // Determine parent symbol
+    const char *parentSymbol = (root->parent == NULL) ? "ROOT" : grammarTerms[root->parent->current];
+
+    // Handle numeric tokens
+    if (strcmp(grammarTerms[root->current], "TK_NUM") == 0) {
+        fprintf(fd, "%-15s %-20s %-10d %-20s %-15d %-20s %-10s %-20s\n",
+                lexeme, grammarTerms[root->current], root->lineNo, grammarTerms[root->current], atoi(root->lexeme),
+                parentSymbol, isLeaf, grammarTerms[root->current]);
+    } else if (strcmp(grammarTerms[root->current], "TK_RNUM") == 0) {
+        fprintf(fd, "%-15s %-20s %-10d %-20s %-15.5f %-20s %-10s %-20s\n",
+                lexeme, grammarTerms[root->current], root->lineNo, grammarTerms[root->current], atof(root->lexeme),
+                parentSymbol, isLeaf, grammarTerms[root->current]);
+    } else {
+        fprintf(fd, "%-15s %-20s %-10d %-20s %-15s %-20s %-10s %-20s\n",
+                lexeme, grammarTerms[root->current], root->lineNo, grammarTerms[root->current], "---",
+                parentSymbol, isLeaf, grammarTerms[root->current]);
+    }
 }
 
 // Function to print the parse tree
-void printParseTree(parseTree root, char *outfile)
-{
-    FILE *f = fopen(outfile, "w");
-    if (f == NULL)
-    {
-        printf("Error in opening the file");
-        exit(1);
+void printParseTree(parseTree PT, char *outfile) {
+    FILE *fp = fopen(outfile, "w");
+    if (fp == NULL) {
+        perror("Error opening output file");
+        return;
     }
-    fprintf(f, "%-15s %-3s %-22s %-10s %-22s %-4s %-22s\n", "lexeme", "lineNo", "TokenName", "ValueIfNumber", "Parent", "isLeaf", "Node");
-    outputTree(root, f);
-    fclose(f);
+
+    // Print header for better readability
+    fprintf(fp, "%-15s %-20s %-10s %-20s %-15s %-20s %-10s %-20s\n",
+            "Lexeme", "CurrentNode", "LineNo", "TokenName", "ValueIfNumber", "Parent", "IsLeaf", "NodeSymbol");
+    fprintf(fp, "------------------------------------------------------------------------------------------------------\n");
+
+    // Print parse tree using recursive function
+    outputTree(PT, fp);
+
+    fclose(fp);
 }
+
 
 // Function to print Grammar
 void print_grammar(grammar G)

@@ -18,6 +18,9 @@ struct parseTree
     int current;
     int sizeofChild;
     int lineNo;
+    char tokenName[30];
+    char valueIfNumber[30]; // Value if it's a number (e.g., integer or real)
+    char symbol[30];        // Grammar symbol of this node
 };
 struct FirstAndFollow
 {
