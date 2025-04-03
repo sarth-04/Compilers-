@@ -1,55 +1,32 @@
 # LL(1) Parser-Based Compiler  
 
-This repository contains a compiler built from scratch using C, featuring an LL(1) parser that successfully parses the specified language. The project was developed for the **Compiler Construction and Design** course.  
+This project implements a **compiler with an LL(1) parser**, built from scratch using C. It performs **lexical analysis, syntax analysis, and parsing** for a given language. This project was developed for the **Compiler Construction and Design** course.  
 
 ## Requirements  
 - **GCC Version**: 11.4.0  
 - **Operating System**: Ubuntu 22.04 (via WSL)  
 
-## File and Function Descriptions  
+## **Overview of Lexer and Parser**  
 
-### **Lexer (lexer.c)**  
-#### **Functions:**  
-- `FILE *getStream(FILE *fp)`:  
-  - Reads source code from the given file (`fp`) and efficiently loads it into a twin buffer.  
-  - Ensures minimal I/O operations by maintaining the file pointer and dynamically loading data as needed.  
+### **Lexer (Lexical Analyzer)**  
+- Reads the source code and **tokenizes** it into meaningful components.  
+- Uses **buffering techniques** to efficiently process large files.  
+- Detects and reports **lexical errors** like unrecognized symbols.  
+- Ignores comments while extracting tokens for the parser.  
 
-- `tokenInfo getNextToken(twinBuffer B)`:  
-  - Reads character streams and recognizes lexemes.  
-  - Performs lexical analysis, returns token information, and detects lexical errors.  
+### **Parser (Syntax Analyzer)**  
+- Uses **LL(1) parsing** to verify the syntax of the source code.  
+- Builds a **parse tree** based on predefined grammar rules.  
+- Computes **FIRST and FOLLOW** sets to generate a **predictive parsing table**.  
+- Reports **syntax errors** with precise line numbers.  
+- Outputs a structured **parse tree** for further analysis.  
 
-- `removeComments(char *testcaseFile, char *cleanFile)`:  
-  - Removes comments from the source code and writes the cleaned version to `cleanFile`.  
-  - Lexer ignores comments while tokenizing input, but this function is provided for demonstration purposes.  
+## **File Structure**  
 
-### **Parser (parser.c)**  
-#### **Functions:**  
-- `FirstAndFollow ComputeFirstAndFollowSets(grammar G)`:  
-  - Computes **FIRST** and **FOLLOW** sets for the given grammar `G`.  
-  - Can be automated or manually populated based on project needs.  
-
-- `createParseTable(FirstAndFollow F, table T)`:  
-  - Uses computed FIRST and FOLLOW sets to construct the predictive parsing table `T`.  
-
-- `parseInputSourceCode(char *testcaseFile, table T)`:  
-  - Parses the given source code file using the LL(1) parsing table.  
-  - Generates a **parse tree**, reports syntax errors with line numbers, and confirms successful parsing with a message.  
-
-- `printParseTree(parseTree PT, char *outfile)`:  
-  - Outputs the parse tree in **inorder traversal** format to `outfile`.  
-  - Each line contains the following structured data:  
-    ```
-    lexeme CurrentNode lineno tokenName valueIfNumber parentNodeSymbol isLeafNode(yes/no) NodeSymbol
-    ```
-  - Ensures clean formatting for readability.  
-
-## **Header and Additional Files**  
-
-- **lexerDef.h** → Data definitions used in `lexer.c`  
-- **lexer.h** → Function prototypes for `lexer.c`  
-- **parserDef.h** → Data structures for grammar, parsing table, and parse tree  
-- **parser.h** → Function prototypes for `parser.c`  
-- **driver.c** → Main execution flow (details will be uploaded soon)  
-- **makefile** → Automates compilation using GNU Make  
-
+- **lexer.c** → Implements the lexical analyzer  
+- **parser.c** → Implements the LL(1) parser  
+- **lexerDef.h / lexer.h** → Lexer-related data structures and function prototypes  
+- **parserDef.h / parser.h** → Parser-related data structures and function prototypes  
+- **driver.c** → Main program execution  
+- **makefile** → Automates compilation  
 
